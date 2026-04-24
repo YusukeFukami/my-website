@@ -35,12 +35,17 @@
       letter-spacing: 0.1em;
     }
 
+    #task-count {
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
     .input-area {
       display: flex;
       gap: 12px;
       width: 100%;
       max-width: 500px;
-      margin-bottom: 32px;
+      margin-bottom: 16px;
     }
 
     #task-input {
@@ -66,6 +71,30 @@
       transition: opacity 0.2s;
     }
     #add-btn:hover { opacity: 0.8; }
+
+    .filter-area {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 24px;
+    }
+
+    .filter-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 16px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .filter-btn:hover { color: var(--text); }
+    .filter-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
 
     #task-list {
       list-style: none;
@@ -105,26 +134,50 @@
       transition: border-color 0.2s, color 0.2s;
     }
     .delete-btn:hover { border-color: #ff5f57; color: #ff5f57; }
+
+    #clear-btn {
+      margin-top: 20px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 20px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    #clear-btn:hover { border-color: #ff5f57; color: #ff5f57; }
   </style>
 
 </head>
 <body>
 
-  <h1>To Do リスト</h1>
+  <h1>To Do リスト <span id="task-count"></span></h1>
 
-  <!-- 入力エリア -->
   <div class="input-area">
     <input type="text" id="task-input" placeholder="タスクを入力...">
     <button id="add-btn">追加</button>
   </div>
 
-  <!-- タスク一覧 -->
+  <div class="filter-area">
+    <button class="filter-btn active" data-filter="all">全て</button>
+    <button class="filter-btn" data-filter="active">未完了</button>
+    <button class="filter-btn" data-filter="done">完了済み</button>
+  </div>
+
   <ul id="task-list"></ul>
 
-  <script>
+  <button id="clear-btn">完了済みを削除</button>
+
+    <script>
     const input    = document.getElementById('task-input');
     const addBtn   = document.getElementById('add-btn');
     const taskList = document.getElementById('task-list');
+    const clearBtn = document.getElementById('clear-btn');
+    const taskCount = document.getElementById('task-count');
+
+    let tasks = [];
+    let currentFilter = 'all';
 
     addBtn.addEventListener('click', addTask);
     input.addEventListener('keydown', function(e) {
@@ -135,34 +188,63 @@
       const text = input.value.trim();
       if (text === '') return;
 
-      const li = document.createElement('li');
-      li.className = 'task-item';
-
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.addEventListener('change', function() {
-        span.classList.toggle('done', checkbox.checked);
-      });
-
-      const span = document.createElement('span');
-      span.className = 'task-text';
-      span.textContent = text;
-
-      const delBtn = document.createElement('button');
-      delBtn.className = 'delete-btn';
-      delBtn.textContent = '削除';
-      delBtn.addEventListener('click', function() {
-        li.remove();
-      });
-
-      li.appendChild(checkbox);
-      li.appendChild(span);
-      li.appendChild(delBtn);
-      taskList.appendChild(li);
-
+      tasks.push({ text: text, done: false });
       input.value = '';
       input.focus();
+      render();
     }
+
+    function render() {
+      taskList.innerHTML = '';
+
+      const filtered = tasks.filter(function(task) {
+        if (currentFilter === 'active') return !task.done;
+        if (currentFilter === 'done')   return task.done;
+        return true;
+      });
+
+      filtered.forEach(function(task, index) {
+        const realIndex = tasks.indexOf(task);
+
+        const li = document.createElement('li');
+        li.className = 'task-item';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = task.done;
+        checkbox.addEventListener('change', function() {
+          tasks[realIndex].done = checkbox.checked;
+          render();
+        });
+
+        const span = document.createElement('span');
+        span.className = 'task-text' + (task.done ? ' done' : '');
+        span.textContent = task.text;
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.textContent = '削除';
+        delBtn.addEventListener('click', function() {
+          tasks.splice(realIndex, 1);
+          render();
+        });
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        taskList.appendChild(li);
+      });
+
+      const remaining = tasks.filter(function(t) { return !t.done; }).length;
+      taskCount.textContent = '(' + remaining + ' 件)';
+    }
+
+    clearBtn.addEventListener('click', function() {
+      tasks = tasks.filter(function(t) { return !t.done; });
+      render();
+    });
+
+    render();
   </script>
 
 </body>
