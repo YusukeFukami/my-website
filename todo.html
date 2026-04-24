@@ -244,6 +244,16 @@
       render();
     });
 
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        currentFilter = btn.dataset.filter;
+        filterBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        render();
+      });
+    });
+
     render();
   </script>
 
